@@ -76,6 +76,44 @@ extra indent = 2
      (t
       ""))))
 
+(defun adaptive-wrap--vp-string-pixel-width (string)
+  "Return the width of STRING in pixels.
+
+  Just like `string-pixel-width', but adjusts to `variable-pitch-mode' if it is active."
+  (if (zerop (length string))
+      0
+    (let ((variable-pitch-active (and (bound-and-true-p buffer-face-mode)
+                                      (bound-and-true-p buffer-face-mode-face)
+                                      (eq buffer-face-mode-face
+                                          'variable-pitch))))
+      ;; Keeping a work buffer around is more efficient than creating
+      ;; a new temporary buffer.
+      (with-current-buffer (get-buffer-create " *markdown/string-pixel-width*")
+        ;; If `display-line-numbers' is enabled in internal buffers
+        ;; (e.g. globally), it breaks width calculation (bug#59311)
+        (setq-local display-line-numbers nil)
+        (delete-region (point-min) (point-max))
+        (if variable-pitch-active
+            (variable-pitch-mode 1)
+          (variable-pitch-mode -1))
+        ;; Disable line-prefix and wrap-prefix, for the same reason.
+        (setq line-prefix nil
+  	    wrap-prefix nil)
+        (insert (propertize string 'line-prefix nil 'wrap-prefix nil))
+        (car (buffer-text-pixel-size nil nil t))))))
+
+(defun adaptive-wrap--prefix-width-property (beg end)
+  "Return the pixel-width of the prefix of the line between BEG and END.
+
+  The returned value is a specified space:
+  https://www.gnu.org/software/emacs/manual/html_node/elisp/Specified-Space.html"
+  (let* ((whitespace-prefix (adaptive-wrap-fill-context-prefix beg end))
+         (prefix-len (string-width whitespace-prefix))
+         (prefix (buffer-substring beg (+ beg prefix-len)))
+         (prefix-width (adaptive-wrap--vp-string-pixel-width prefix)))
+    `(space . (:width (,prefix-width)))))
+
+
 (defun adaptive-wrap-prefix-function (beg end)
   "Indent the region between BEG and END with adaptive filling."
   (goto-char beg)
@@ -84,7 +122,7 @@ extra indent = 2
       (put-text-property (point)
                          (progn (search-forward "\n" end 'move) (point))
                          'wrap-prefix
-                         (adaptive-wrap-fill-context-prefix lbp (point))))))
+                         (adaptive-wrap--prefix-width-property lbp (point))))))
 
 ;;;###autoload
 (define-minor-mode adaptive-wrap-prefix-mode
