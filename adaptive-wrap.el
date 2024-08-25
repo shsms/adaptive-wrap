@@ -79,7 +79,8 @@ extra indent = 2
 (defun adaptive-wrap--vp-string-pixel-width (string)
   "Return the width of STRING in pixels.
 
-  Just like `string-pixel-width', but adjusts to `variable-pitch-mode' if it is active."
+  Just like `string-pixel-width', but adjusts to
+  `variable-pitch-mode' if it is active."
   (if (zerop (length string))
       0
     (let ((variable-pitch-active (and (bound-and-true-p buffer-face-mode)
@@ -105,8 +106,8 @@ extra indent = 2
 (defun adaptive-wrap--prefix-width-property (beg end)
   "Return the pixel-width of the prefix of the line between BEG and END.
 
-  The returned value is a specified space:
-  https://www.gnu.org/software/emacs/manual/html_node/elisp/Specified-Space.html"
+  The returned value is a specified space.  Visit info
+  node `(elisp)Specified Space' for more information."
   (let* ((whitespace-prefix (adaptive-wrap-fill-context-prefix beg end))
          (prefix-len (string-width whitespace-prefix))
          (prefix (buffer-substring beg (+ beg prefix-len)))
